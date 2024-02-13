@@ -47,5 +47,21 @@ const getIntersection = (A: Point, B: Point, C: Point, D: Point): Touch | null =
   return null;
 };
 
-export {lerp, point, line, getIntersection};
+const polysIntersect = (poly1: Point[], poly2: Point[]) => {
+  for (const [i, poly1Point] of poly1.entries()) {
+    for (const [j, poly2Point] of poly2.entries()) {
+      const touch = getIntersection(
+        poly1Point,
+        poly1[(i + 1) % poly1.length],
+
+        poly2Point,
+        poly2[(j + 1) % poly2.length]
+      );
+      if (touch) return true;
+    }
+  }
+  return false;
+};
+
+export {lerp, point, line, getIntersection, polysIntersect};
 export type {Point, Line, Touch};

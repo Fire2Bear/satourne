@@ -45,11 +45,11 @@ const Canvas = () => {
       const roadContext = roadCanvas.getContext('2d');
       if (!roadContext) return;
 
+      updateCar(controlsRef.current, roadRef.current, delta);
+
       roadContext.clearRect(0, 0, roadCanvas.width, roadCanvas.height);
       roadContext.save();
       roadContext.translate(0, -carRef.current.y + roadCanvas.height * 0.7);
-
-      updateCar(controlsRef.current, roadRef.current, delta);
 
       drawRoadInContext(roadContext, delta);
       drawCarInContext(roadContext, controlsRef.current, roadRef.current, delta);

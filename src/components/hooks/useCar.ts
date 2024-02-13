@@ -11,7 +11,8 @@ const useCar = (car: Car) => {
 
   const updateCar = useCallback(
     (controls: Controls, road: Road, delta: number) => {
-      carRef.current = updateCarFromControls(carRef.current, controls, delta);
+      carRef.current = updateCarFromControls(carRef.current, controls, road.borders, delta);
+
       sensorRef.current = updateSensorWithCar(carRef.current, road);
     },
     [carRef, sensorRef, updateSensorWithCar]
