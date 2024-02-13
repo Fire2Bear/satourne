@@ -25,9 +25,9 @@ const line = (a: Point, b: Point) => {
   };
 };
 
-type Reading = {x: number; y: number; offset: number};
+type Touch = {x: number; y: number; offset: number};
 
-const getIntersection = (A: Point, B: Point, C: Point, D: Point): Reading | null => {
+const getIntersection = (A: Point, B: Point, C: Point, D: Point): Touch | null => {
   const tTop = (D.x - C.x) * (A.y - C.y) - (D.y - C.y) * (A.x - C.x);
   const uTop = (C.y - A.y) * (A.x - B.x) - (C.x - A.x) * (A.y - B.y);
   const bottom = (D.y - C.y) * (B.x - A.x) - (D.x - C.x) * (B.y - A.y);
@@ -48,4 +48,4 @@ const getIntersection = (A: Point, B: Point, C: Point, D: Point): Reading | null
 };
 
 export {lerp, point, line, getIntersection};
-export type {Point, Line, Reading};
+export type {Point, Line, Touch};

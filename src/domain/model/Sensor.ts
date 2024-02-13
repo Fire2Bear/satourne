@@ -1,6 +1,6 @@
 import {Car} from '@/domain/model/Car';
 import {Road} from '@/domain/model/Road';
-import {Line, Reading, getIntersection, lerp, line, point} from '@/domain/utils';
+import {Line, Touch, getIntersection, lerp, line, point} from '@/domain/utils';
 
 type Sensor = {
   rayCount: number;
@@ -8,7 +8,7 @@ type Sensor = {
   raySpread: number;
 
   rays: Line[];
-  readings: Reading[];
+  readings: (Touch | null)[];
 };
 
 const createSensor = (sensor: Partial<Sensor>): Sensor => {
@@ -23,39 +23,34 @@ const createSensor = (sensor: Partial<Sensor>): Sensor => {
 };
 
 const updateSensor = (car: Car, sensor: Sensor, roadBorders: Road['borders']) => {
-  const newSensor = castRays(car, sensor, roadBorders);
+  const rays = castRays(car, sensor, roadBorders);
 
-  const readings: Reading[] = [];
-  for (let i = 0; i < sensor.rays.length; i++) {
-    const ray = sensor.rays[i];
+  const readings = [];
+  for (let i = 0; i < rays.length; i++) {
+    const ray = rays[i];
     const reading = getReading(ray, roadBorders);
-    if (reading) {
-      readings.push(reading);
-    }
+
+    readings.push(reading);
   }
 
-  return {...newSensor, readings};
+  return {...sensor, rays, readings};
 };
 
 const getReading = (ray: Line, roadBorders: Road['borders']) => {
   const touches = [];
 
-  for (let i = 0; i < roadBorders.length; i++) {
-    const border = roadBorders[i];
+  for (const border of roadBorders) {
     const touch = getIntersection(ray.a, ray.b, border.a, border.b);
-    // console.log('roadBorders : ', i, roadBorders);
     if (touch) {
       touches.push(touch);
     }
-
-    if (touches.length === 0) {
-      return null;
-    }
   }
-  const offsets = touches.map(touch => touch.offset);
-  const minOffset = Math.min(...offsets);
 
-  return touches.find(touch => touch.offset === minOffset);
+  if (touches.length === 0) {
+    return null;
+  }
+
+  return touches.reduce((minOffset, currTouch) => (currTouch.offset > minOffset.offset ? minOffset : currTouch));
 };
 
 const castRays = (car: Car, sensor: Sensor, borders: Road['borders']) => {
@@ -70,16 +65,14 @@ const castRays = (car: Car, sensor: Sensor, borders: Road['borders']) => {
 
     rays.push(line(start, end));
   }
-  return {...sensor, rays};
+  return rays;
 };
 
 const drawSensor = (ctx: CanvasRenderingContext2D, sensor: Sensor) => {
-  for (let i = 0; i < sensor.rays.length; i++) {
-    const ray = sensor.rays[i];
+  for (const [i, ray] of sensor.rays.entries()) {
     let end = ray.b;
-    if (sensor.readings[i]) {
-      end = sensor.readings[i];
-      console.log('end : ', end);
+    if (sensor.readings[i] !== null) {
+      end = sensor.readings[i] as Touch;
     }
 
     ctx.beginPath();
