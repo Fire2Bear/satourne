@@ -1,5 +1,5 @@
-import {useKeyDown} from '@/components/hooks/useKeyDown';
-import {useKeyup} from '@/components/hooks/useKeyUp';
+import {useKeyDown} from '@/components/hooks/utils/useKeyDown';
+import {useKeyup} from '@/components/hooks/utils/useKeyUp';
 import {useCallback, useRef} from 'react';
 
 type Props = {

@@ -81,4 +81,4 @@ const feedForwardLevel = (givenInputs: Level['inputs'], level: Level): Level['ou
 };
 
 export {createNetwork, feedForwardNetwork, randomize};
-export type {NeuralNetwork};
+export type {NeuralNetwork, Level};

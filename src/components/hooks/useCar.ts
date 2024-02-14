@@ -52,7 +52,7 @@ const useCar = (car: Car) => {
     [carRef, drawSensorInContext]
   );
 
-  return {carRef, drawCarInContext, updateCar};
+  return {carRef, networkRef, drawCarInContext, updateCar};
 };
 
 export {useCar};

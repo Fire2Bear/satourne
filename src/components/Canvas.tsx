@@ -4,9 +4,10 @@ import {createCar} from '@/domain/model/Car';
 import {useCallback, useEffect, useRef} from 'react';
 import styled from 'styled-components';
 import {createRoad, getLaneCenter} from '@/domain/model/Road';
+import {drawNetwork} from '@/domain/model/NetworkVisualizer';
 
-const Container = styled.canvas`
-  background-color: lightgray;
+const Container = styled.canvas<{color: string}>`
+  background-color: ${({color}) => color};
 `;
 
 const ROAD_WIDTH = 200;
@@ -17,9 +18,10 @@ const Canvas = () => {
   const previousTimeStamp = useRef<number>(0);
 
   const roadCanvasRef = useRef<HTMLCanvasElement>(null);
+  const networkCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const {roadRef, trafficRef, drawRoadInContext, updateRoad} = useRoad(createRoad(100, ROAD_WIDTH * 0.9));
-  const {carRef, drawCarInContext, updateCar} = useCar(createCar({x: getLaneCenter(1, roadRef.current)}));
+  const {carRef, networkRef, drawCarInContext, updateCar} = useCar(createCar({x: getLaneCenter(1, roadRef.current)}));
 
   const animate = useCallback(
     (timeStamp: number) => {
@@ -34,13 +36,18 @@ const Canvas = () => {
       previousTimeStamp.current = timeStamp;
 
       const roadCanvas = roadCanvasRef.current;
-      if (!roadCanvas) return;
+      const networkCanvas = networkCanvasRef.current;
+      if (!roadCanvas || !networkCanvas) return;
 
       roadCanvas.height = window.innerHeight;
       roadCanvas.width = ROAD_WIDTH;
 
+      networkCanvas.height = window.innerHeight;
+      networkCanvas.width = ROAD_WIDTH * 1.5;
+
       const roadContext = roadCanvas.getContext('2d');
-      if (!roadContext) return;
+      const networkContext = networkCanvas.getContext('2d');
+      if (!roadContext || !networkContext) return;
 
       updateRoad(delta);
       updateCar(roadRef.current, trafficRef.current, delta);
@@ -52,11 +59,14 @@ const Canvas = () => {
       drawRoadInContext(roadContext, delta);
       drawCarInContext(roadContext);
 
+      networkContext.lineDashOffset = -timeStamp / 50;
+      drawNetwork(networkContext, networkRef.current);
+
       roadContext.restore();
 
       animationRequestRef.current = requestAnimationFrame(animate);
     },
-    [carRef, roadRef, trafficRef, updateCar, updateRoad, drawCarInContext, drawRoadInContext]
+    [carRef, roadRef, trafficRef, networkRef, updateCar, updateRoad, drawCarInContext, drawRoadInContext]
   );
 
   // useEffect(() => {
@@ -71,7 +81,12 @@ const Canvas = () => {
     return () => cancelAnimationFrame(animationRequestRef.current);
   }, [animate]);
 
-  return <Container ref={roadCanvasRef}></Container>;
+  return (
+    <>
+      <Container ref={roadCanvasRef} color="lightgray"></Container>
+      <Container ref={networkCanvasRef} color="black"></Container>
+    </>
+  );
 };
 
 export default Canvas;

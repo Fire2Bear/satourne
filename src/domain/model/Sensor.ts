@@ -14,7 +14,7 @@ type Sensor = {
 
 const createSensor = (sensor: Partial<Sensor>): Sensor => {
   return {
-    rayCount: 10,
+    rayCount: 5,
     rayLength: 150,
     raySpread: Math.PI / 2,
 
