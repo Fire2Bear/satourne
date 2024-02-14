@@ -1,6 +1,7 @@
 import {Car} from '@/domain/model/Car';
 import {Road} from '@/domain/model/Road';
-import {Line, Touch, getIntersection, lerp, line, point} from '@/domain/utils';
+import {Traffic} from '@/domain/model/Traffic';
+import {Line, Touch, getIntersection, lerp, line, point, polysIntersect} from '@/domain/utils';
 
 type Sensor = {
   rayCount: number;
@@ -13,7 +14,7 @@ type Sensor = {
 
 const createSensor = (sensor: Partial<Sensor>): Sensor => {
   return {
-    rayCount: 5,
+    rayCount: 10,
     rayLength: 150,
     raySpread: Math.PI / 2,
 
@@ -22,13 +23,14 @@ const createSensor = (sensor: Partial<Sensor>): Sensor => {
   };
 };
 
-const updateSensor = (car: Car, sensor: Sensor, roadBorders: Road['borders']) => {
-  const rays = castRays(car, sensor, roadBorders);
+const updateSensor = (car: Car, sensor: Sensor, roadBorders: Road['borders'], traffic: Traffic): Sensor => {
+  const rays = castRays(car, sensor);
 
   const readings = [];
   for (let i = 0; i < rays.length; i++) {
     const ray = rays[i];
-    const reading = getReading(ray, roadBorders);
+
+    const reading = getReading(ray, roadBorders, traffic);
 
     readings.push(reading);
   }
@@ -36,13 +38,20 @@ const updateSensor = (car: Car, sensor: Sensor, roadBorders: Road['borders']) =>
   return {...sensor, rays, readings};
 };
 
-const getReading = (ray: Line, roadBorders: Road['borders']) => {
-  const touches = [];
+const getReading = (ray: Line, roadBorders: Road['borders'], traffic: Traffic): Touch | null => {
+  const touches: Touch[] = [];
 
   for (const border of roadBorders) {
     const touch = getIntersection(ray.a, ray.b, border.a, border.b);
     if (touch) {
       touches.push(touch);
+    }
+  }
+
+  for (const car of traffic) {
+    const touch = polysIntersect([ray.a, ray.b], car.polygon);
+    if (touch) {
+      touches.push(...touch);
     }
   }
 
@@ -53,7 +62,7 @@ const getReading = (ray: Line, roadBorders: Road['borders']) => {
   return touches.reduce((minOffset, currTouch) => (currTouch.offset > minOffset.offset ? minOffset : currTouch));
 };
 
-const castRays = (car: Car, sensor: Sensor, borders: Road['borders']) => {
+const castRays = (car: Car, sensor: Sensor) => {
   const rays = [];
 
   for (let i = 0; i < sensor.rayCount; i++) {

@@ -57,7 +57,7 @@ const useControl = () => {
   useKeyDown(handleKeyDown, ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp']);
   useKeyup(handleKeyUp, ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp']);
 
-  return controlsRef;
+  return {controlsRef};
 };
 
 export {useControl};

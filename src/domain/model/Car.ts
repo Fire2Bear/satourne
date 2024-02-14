@@ -1,5 +1,6 @@
 import {Controls} from '@/components/hooks/useControl';
 import {Road} from '@/domain/model/Road';
+import {Traffic} from '@/domain/model/Traffic';
 import {Point, point, polysIntersect} from '@/domain/utils';
 
 type Car = {
@@ -12,18 +13,19 @@ type Car = {
   damaged: boolean;
 
   speed: number;
+  maxSpeed: number;
   x: number;
   y: number;
   angle: number;
 };
 
-const MAX_SPEED = 2;
+const MAX_SPEED = 1.5;
 const FRICTION = 0.5;
 
 const CAR_WIDTH = 30;
 const CAR_HEIGHT = 50;
 
-const createCar = ({speed, x, y, angle}: Partial<Car>): Car => {
+const createCar = ({speed, x, y, angle, maxSpeed}: Partial<Car>): Car => {
   return {
     size: {
       width: CAR_WIDTH,
@@ -32,18 +34,34 @@ const createCar = ({speed, x, y, angle}: Partial<Car>): Car => {
     polygon: [],
     damaged: false,
     speed: speed ?? 0,
+    maxSpeed: maxSpeed ?? MAX_SPEED,
     x: x ?? 100,
     y: y ?? 100,
     angle: angle ?? 0,
   };
 };
 
-const updateCarFromControls = (car: Car, controls: Controls, roadBorders: Road['borders'], delta: number): Car => {
+const convertOutputsToControls = (outputs: number[]): Controls => {
+  return {
+    left: !!outputs[0],
+    right: !!outputs[1],
+    forward: !!outputs[2],
+    reverse: !!outputs[3],
+  };
+};
+
+const updateCarFromControls = (
+  car: Car,
+  controls: Controls,
+  roadBorders: Road['borders'],
+  traffic: Traffic,
+  delta: number
+): Car => {
   let {x, y, angle, speed, damaged} = car;
   if (!damaged) {
     const movedCar = move(car, controls, delta);
     const polygon = createPolygon(car);
-    const damaged = assessDamaged(car, roadBorders);
+    const damaged = assessDamaged(car, roadBorders, traffic);
     return {...movedCar, polygon, damaged};
   }
   return car;
@@ -58,8 +76,8 @@ const move = (car: Car, {forward, left, right, reverse}: Controls, delta: number
   const acceleration = (forward ? 1 : reverse ? -1 : 0) * deltaPercentage;
 
   speed = car.speed + acceleration;
-  if (speed > MAX_SPEED) speed = MAX_SPEED;
-  if (speed < -MAX_SPEED / 2) speed = -MAX_SPEED / 2;
+  if (speed > car.maxSpeed) speed = car.maxSpeed;
+  if (speed < -car.maxSpeed / 2) speed = -car.maxSpeed / 2;
 
   if (speed > 0) speed -= currentFriction;
   if (speed < 0) speed += currentFriction;
@@ -102,18 +120,22 @@ const createPolygon = (car: Car) => {
   return points;
 };
 
-const assessDamaged = (car: Car, roadBorders: Road['borders']) => {
+const assessDamaged = (car: Car, roadBorders: Road['borders'], traffic: Traffic) => {
   for (const border of roadBorders) {
     if (polysIntersect(car.polygon, [border.a, border.b])) return true;
+  }
+
+  for (const trafficCar of traffic) {
+    if (polysIntersect(car.polygon, trafficCar.polygon)) return true;
   }
   return false;
 };
 
-const drawCar = (car: Car, ctx: CanvasRenderingContext2D) => {
+const drawCar = (car: Car, ctx: CanvasRenderingContext2D, color: string) => {
   if (car.damaged) {
     ctx.fillStyle = 'gray';
   } else {
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = color;
   }
 
   ctx.beginPath();
@@ -126,5 +148,5 @@ const drawCar = (car: Car, ctx: CanvasRenderingContext2D) => {
   ctx.fill();
 };
 
-export {createCar, drawCar, updateCarFromControls, createPolygon};
+export {createCar, drawCar, updateCarFromControls, createPolygon, convertOutputsToControls};
 export type {Car};

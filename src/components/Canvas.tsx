@@ -1,4 +1,3 @@
-import {useControl} from '@/components/hooks/useControl';
 import {useCar} from '@/components/hooks/useCar';
 import {useRoad} from '@/components/hooks/useRoad';
 import {createCar} from '@/domain/model/Car';
@@ -19,9 +18,7 @@ const Canvas = () => {
 
   const roadCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const controlsRef = useControl();
-
-  const {roadRef, drawRoadInContext} = useRoad(createRoad(100, ROAD_WIDTH * 0.9));
+  const {roadRef, trafficRef, drawRoadInContext, updateRoad} = useRoad(createRoad(100, ROAD_WIDTH * 0.9));
   const {carRef, drawCarInContext, updateCar} = useCar(createCar({x: getLaneCenter(1, roadRef.current)}));
 
   const animate = useCallback(
@@ -45,20 +42,21 @@ const Canvas = () => {
       const roadContext = roadCanvas.getContext('2d');
       if (!roadContext) return;
 
-      updateCar(controlsRef.current, roadRef.current, delta);
+      updateRoad(delta);
+      updateCar(roadRef.current, trafficRef.current, delta);
 
       roadContext.clearRect(0, 0, roadCanvas.width, roadCanvas.height);
       roadContext.save();
       roadContext.translate(0, -carRef.current.y + roadCanvas.height * 0.7);
 
       drawRoadInContext(roadContext, delta);
-      drawCarInContext(roadContext, controlsRef.current, roadRef.current, delta);
+      drawCarInContext(roadContext);
 
       roadContext.restore();
 
       animationRequestRef.current = requestAnimationFrame(animate);
     },
-    [carRef, roadRef, controlsRef, updateCar, drawCarInContext, drawRoadInContext]
+    [carRef, roadRef, trafficRef, updateCar, updateRoad, drawCarInContext, drawRoadInContext]
   );
 
   // useEffect(() => {
