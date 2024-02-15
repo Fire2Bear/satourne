@@ -1,7 +1,7 @@
-import {Level, NeuralNetwork} from '@/domain/model/Network';
+import {Level, Network} from '@/domain/model/Network';
 import {getRGBA, lerp} from '@/domain/utils';
 
-const drawNetwork = (ctx: CanvasRenderingContext2D, network: NeuralNetwork) => {
+const drawNetwork = (ctx: CanvasRenderingContext2D, network: Network) => {
   const margin = 50;
   const left = margin;
   const top = margin;

@@ -12,7 +12,7 @@ type Props = {
 const useRoad = (road: Road) => {
   const roadRef = useRef<Road>(road);
 
-  const {trafficRef, drawTrafficInContext, updateTraffic} = useTraffic(createTraffic(roadRef.current, 1));
+  const {trafficRef, drawTrafficInContext, updateTraffic} = useTraffic(createTraffic(roadRef.current, 5));
 
   const updateRoad = (delta: number) => {
     updateTraffic(roadRef.current.borders, delta);

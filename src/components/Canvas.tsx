@@ -1,14 +1,26 @@
-import {useCar} from '@/components/hooks/useCar';
+import {useCars} from '@/components/hooks/useCars';
 import {useRoad} from '@/components/hooks/useRoad';
-import {createCar} from '@/domain/model/Car';
 import {useCallback, useEffect, useRef} from 'react';
 import styled from 'styled-components';
-import {createRoad, getLaneCenter} from '@/domain/model/Road';
+import {createRoad} from '@/domain/model/Road';
 import {drawNetwork} from '@/domain/model/NetworkVisualizer';
+import {getBestCar} from '@/domain/model/Car';
 
 const Container = styled.canvas<{color: string}>`
   background-color: ${({color}) => color};
 `;
+const Buttons = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const discard = () => {
+  localStorage.removeItem('bestBrain');
+};
+
+const getBestBrain = () => {
+  return localStorage.getItem('bestBrain');
+};
 
 const ROAD_WIDTH = 200;
 const Canvas = () => {
@@ -21,7 +33,13 @@ const Canvas = () => {
   const networkCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const {roadRef, trafficRef, drawRoadInContext, updateRoad} = useRoad(createRoad(100, ROAD_WIDTH * 0.9));
-  const {carRef, networkRef, drawCarInContext, updateCar} = useCar(createCar({x: getLaneCenter(1, roadRef.current)}));
+  const {carRefs, drawCars, updateCars} = useCars({carCount: 1000, road: roadRef.current});
+
+  let bestCar = getBestCar(carRefs.current);
+
+  const save = useCallback(() => {
+    localStorage.setItem('bestBrain', JSON.stringify(bestCar.network));
+  }, [bestCar]);
 
   const animate = useCallback(
     (timeStamp: number) => {
@@ -50,23 +68,24 @@ const Canvas = () => {
       if (!roadContext || !networkContext) return;
 
       updateRoad(delta);
-      updateCar(roadRef.current, trafficRef.current, delta);
+      updateCars(roadRef.current, trafficRef.current, delta);
 
-      roadContext.clearRect(0, 0, roadCanvas.width, roadCanvas.height);
+      bestCar = getBestCar(carRefs.current);
+
       roadContext.save();
-      roadContext.translate(0, -carRef.current.y + roadCanvas.height * 0.7);
+      roadContext.translate(0, -bestCar.y + roadCanvas.height * 0.7);
 
       drawRoadInContext(roadContext, delta);
-      drawCarInContext(roadContext);
+      drawCars(roadContext);
 
       networkContext.lineDashOffset = -timeStamp / 50;
-      drawNetwork(networkContext, networkRef.current);
+      drawNetwork(networkContext, bestCar.network);
 
       roadContext.restore();
 
       animationRequestRef.current = requestAnimationFrame(animate);
     },
-    [carRef, roadRef, trafficRef, networkRef, updateCar, updateRoad, drawCarInContext, drawRoadInContext]
+    [carRefs, roadRef, trafficRef, updateCars, updateRoad, drawCars, drawRoadInContext]
   );
 
   // useEffect(() => {
@@ -85,6 +104,10 @@ const Canvas = () => {
     <>
       <Container ref={roadCanvasRef} color="lightgray"></Container>
       <Container ref={networkCanvasRef} color="black"></Container>
+      <Buttons>
+        <button onClick={save}> 💾 Save</button>
+        <button onClick={discard}> 🗑 Discard</button>
+      </Buttons>
     </>
   );
 };

@@ -1,9 +1,12 @@
 import {Controls} from '@/components/hooks/useControl';
+import {Network, createNetwork} from '@/domain/model/Network';
 import {Road} from '@/domain/model/Road';
+import {Sensor, createSensor} from '@/domain/model/Sensor';
 import {Traffic} from '@/domain/model/Traffic';
 import {Point, point, polysIntersect} from '@/domain/utils';
 
-type Car = {
+type TrafficCar = {
+  id: string;
   size: {
     width: number;
     height: number;
@@ -11,12 +14,16 @@ type Car = {
   polygon: Point[];
 
   damaged: boolean;
-
   speed: number;
   maxSpeed: number;
   x: number;
   y: number;
   angle: number;
+};
+
+type Car = TrafficCar & {
+  sensor: Sensor;
+  network: Network;
 };
 
 const MAX_SPEED = 1.5;
@@ -25,8 +32,21 @@ const FRICTION = 0.5;
 const CAR_WIDTH = 30;
 const CAR_HEIGHT = 50;
 
-const createCar = ({speed, x, y, angle, maxSpeed}: Partial<Car>): Car => {
+type CreateCarProps = Partial<Car> & {
+  sensorCount: number;
+  networkLevelCount: number;
+};
+
+const createCar = (car: CreateCarProps): Car => {
   return {
+    ...createTrafficCar(car),
+    sensor: createSensor({rayCount: car.sensorCount}),
+    network: createNetwork([car.sensorCount, 6, 4]),
+  };
+};
+const createTrafficCar = ({speed, x, y, angle, maxSpeed}: Partial<TrafficCar>): TrafficCar => {
+  return {
+    id: crypto.randomUUID(),
     size: {
       width: CAR_WIDTH,
       height: CAR_HEIGHT,
@@ -51,12 +71,12 @@ const convertOutputsToControls = (outputs: number[]): Controls => {
 };
 
 const updateCarFromControls = (
-  car: Car,
+  car: TrafficCar,
   controls: Controls,
   roadBorders: Road['borders'],
   traffic: Traffic,
   delta: number
-): Car => {
+): TrafficCar => {
   let {x, y, angle, speed, damaged} = car;
   if (!damaged) {
     const movedCar = move(car, controls, delta);
@@ -67,7 +87,7 @@ const updateCarFromControls = (
   return car;
 };
 
-const move = (car: Car, {forward, left, right, reverse}: Controls, delta: number) => {
+const move = (car: TrafficCar, {forward, left, right, reverse}: Controls, delta: number) => {
   let {x, y, angle, speed} = car;
 
   const deltaPercentage = delta / 100;
@@ -90,18 +110,18 @@ const move = (car: Car, {forward, left, right, reverse}: Controls, delta: number
 
   if (Math.abs(speed) < currentFriction) speed = 0;
 
-  const newCar: Car = createCar({
+  const newCar: TrafficCar = {
     ...car,
     speed,
     angle,
     x: x - Math.sin(angle) * speed,
     y: y - Math.cos(angle) * speed,
-  });
+  };
 
   return newCar;
 };
 
-const createPolygon = (car: Car) => {
+const createPolygon = (car: TrafficCar) => {
   const points: Point[] = [];
 
   const rad = Math.hypot(car.size.width, car.size.height) / 2;
@@ -120,7 +140,7 @@ const createPolygon = (car: Car) => {
   return points;
 };
 
-const assessDamaged = (car: Car, roadBorders: Road['borders'], traffic: Traffic) => {
+const assessDamaged = (car: TrafficCar, roadBorders: Road['borders'], traffic: Traffic) => {
   for (const border of roadBorders) {
     if (polysIntersect(car.polygon, [border.a, border.b])) return true;
   }
@@ -131,7 +151,7 @@ const assessDamaged = (car: Car, roadBorders: Road['borders'], traffic: Traffic)
   return false;
 };
 
-const drawCar = (car: Car, ctx: CanvasRenderingContext2D, color: string) => {
+const drawCar = (car: TrafficCar, ctx: CanvasRenderingContext2D, color: string) => {
   if (car.damaged) {
     ctx.fillStyle = 'gray';
   } else {
@@ -148,5 +168,17 @@ const drawCar = (car: Car, ctx: CanvasRenderingContext2D, color: string) => {
   ctx.fill();
 };
 
-export {createCar, drawCar, updateCarFromControls, createPolygon, convertOutputsToControls};
-export type {Car};
+const getBestCar = (cars: Car[]) => {
+  return cars.reduce((prevCar, car) => (prevCar.y < car.y ? prevCar : car));
+};
+
+export {
+  createCar,
+  getBestCar,
+  createTrafficCar,
+  drawCar,
+  updateCarFromControls,
+  createPolygon,
+  convertOutputsToControls,
+};
+export type {Car, TrafficCar};

@@ -6,7 +6,9 @@ const Background = styled.div`
   width: 100vw;
   background-color: darkgray;
   overflow: hidden;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 export default function Index() {

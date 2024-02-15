@@ -1,4 +1,6 @@
-type NeuralNetwork = {
+import {lerp} from '@/domain/utils';
+
+type Network = {
   levels: Level[];
 };
 
@@ -13,7 +15,29 @@ const createNetwork = (neuronCounts: number[]) => {
   };
 };
 
-const feedForwardNetwork = (givenInputs: Level['inputs'], network: NeuralNetwork) => {
+const mutateNetwork = (network: Network, amount: number = 1) => {
+  const currentNetwork = structuredClone(network);
+  network.levels.forEach((level, levelIndex) => {
+    for (let i = 0; i < level.biases.length; i++) {
+      currentNetwork.levels[levelIndex].biases[i] = lerp(level.biases[i], Math.random() * 2 - 1, amount);
+    }
+    for (let i = 0; i < level.weights.length; i++) {
+      for (let j = 0; j < level.weights[i].length; j++) {
+        currentNetwork.levels[levelIndex].weights[i][j] = lerp(level.weights[i][j], Math.random() * 2 - 1, amount);
+      }
+    }
+  });
+
+  return currentNetwork;
+};
+
+const updateNetwork = (offsets: number[], originalNetwork: Network) => {
+  const {outputs, network} = feedForwardNetwork(offsets, originalNetwork);
+
+  return {outputs, network};
+};
+
+const feedForwardNetwork = (givenInputs: Level['inputs'], network: Network) => {
   let outputs = feedForwardLevel(givenInputs, network.levels[0]);
 
   for (let i = 1; i < network.levels.length; i++) {
@@ -80,5 +104,5 @@ const feedForwardLevel = (givenInputs: Level['inputs'], level: Level): Level['ou
   return outputs;
 };
 
-export {createNetwork, feedForwardNetwork, randomize};
-export type {NeuralNetwork, Level};
+export {createNetwork, mutateNetwork, feedForwardNetwork, updateNetwork};
+export type {Network, Level};

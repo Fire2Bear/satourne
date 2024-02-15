@@ -20,6 +20,7 @@ const createSensor = (sensor: Partial<Sensor>): Sensor => {
 
     rays: [],
     readings: [],
+    ...sensor,
   };
 };
 
@@ -100,5 +101,13 @@ const drawSensor = (ctx: CanvasRenderingContext2D, sensor: Sensor) => {
   }
 };
 
-export {createSensor, drawSensor, updateSensor};
+const updateSensorWithCar = (car: Car, traffic: Traffic, road: Road) => {
+  return updateSensor(car, car.sensor, road.borders, traffic);
+};
+
+const drawSensorInContext = (ctx: CanvasRenderingContext2D, sensor: Sensor) => {
+  drawSensor(ctx, sensor);
+};
+
+export {createSensor, drawSensor, updateSensorWithCar, drawSensorInContext, updateSensor};
 export type {Sensor};
